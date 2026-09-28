@@ -15,6 +15,29 @@ A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day
 - **Sensors for automations.** Each habit gets a sensor whose state is this week's completion in %, with attributes `today`, `done_today`, `streak`, `weekly_goal`, `done_this_week`, `days`, `habit_type` and `target`.
 - **Services:** `habit_tracker.toggle` and `habit_tracker.set_value` (optional `date`, defaults to today), usable from automations, scripts or voice.
 
+## Screenshots
+
+**Weekly grid** (`habit-tracker-card`): tick days off, count habits show the number, the ring shows this week's progress.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/fanattik/ha-habit-tracker/main/docs/images/week-dark.png">
+  <img src="https://raw.githubusercontent.com/fanattik/ha-habit-tracker/main/docs/images/week.png" alt="Weekly grid card" width="640">
+</picture>
+
+**Month calendar** (`habit-tracker-calendar-card`): a colored dot per done habit, click a day to tick habits off.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/fanattik/ha-habit-tracker/main/docs/images/cal-dark.png">
+  <img src="https://raw.githubusercontent.com/fanattik/ha-habit-tracker/main/docs/images/cal.png" alt="Month calendar card" width="460">
+</picture>
+
+**Week overview** (`habit-tracker-overview-card`): one box per habit, filled with its color once the week's goal is met.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/fanattik/ha-habit-tracker/main/docs/images/ov-dark.png">
+  <img src="https://raw.githubusercontent.com/fanattik/ha-habit-tracker/main/docs/images/ov.png" alt="Week overview card" width="820">
+</picture>
+
 ## Install (HACS)
 
 1. Click **Open in HACS** above (or HACS → ⋮ → *Custom repositories* → add `https://github.com/fanattik/ha-habit-tracker`, type *Integration*).
