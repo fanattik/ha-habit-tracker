@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 import logging
 from pathlib import Path
 from typing import Any
@@ -25,6 +25,7 @@ from .const import (
     ATTR_VALUE,
     CARD_FILENAME,
     CARD_URL,
+    DEFAULT_COLORS,
     DOMAIN,
     SERVICE_SET_VALUE,
     SERVICE_TOGGLE,
@@ -94,6 +95,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     )
 
     websocket_api.async_register_command(hass, ws_week)
+    websocket_api.async_register_command(hass, ws_month)
     websocket_api.async_register_command(hass, ws_set)
     return True
 
@@ -168,18 +170,11 @@ def ws_week(
     except vol.Invalid as err:
         connection.send_error(msg["id"], "invalid_date", str(err))
         return
-    registry = er.async_get(hass)
     result = []
-    for habit in _habits(hass).values():
-        entity_id = registry.async_get_entity_id("sensor", DOMAIN, habit.entry_id)
+    for habit in _sorted_habits(hass):
         result.append(
             {
-                "entry_id": habit.entry_id,
-                "entity_id": entity_id,
-                "name": habit.name,
-                "icon": habit.icon,
-                "type": habit.habit_type,
-                "target": habit.target,
+                **_habit_info(hass, habit),
                 "values": habit.week_values(start),
                 "percent": habit.week_percent(start),
                 "streak": habit.streak(),
@@ -189,11 +184,61 @@ def ws_week(
                 "week_done": habit.week_done(start),
             }
         )
-    result.sort(key=lambda h: h["name"].lower())
     connection.send_result(
         msg["id"],
         {"week_start": start.isoformat(), "today": today().isoformat(), "habits": result},
     )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "habit_tracker/month", vol.Optional("date"): str}
+)
+@callback
+def ws_month(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Return every habit with its logged values for the month containing date."""
+    try:
+        day = _parse_date(msg.get("date"))
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], "invalid_date", str(err))
+        return
+    first = day.replace(day=1)
+    last = (first + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    habits = [
+        {**_habit_info(hass, habit), "values": habit.range_values(first, last)}
+        for habit in _sorted_habits(hass)
+    ]
+    connection.send_result(
+        msg["id"],
+        {
+            "month_start": first.isoformat(),
+            "month_end": last.isoformat(),
+            "today": today().isoformat(),
+            "habits": habits,
+        },
+    )
+
+
+def _sorted_habits(hass: HomeAssistant) -> list[Habit]:
+    return sorted(_habits(hass).values(), key=lambda h: h.name.lower())
+
+
+def _habit_info(hass: HomeAssistant, habit: Habit) -> dict[str, Any]:
+    """Fields both cards use; habits without a color get one from the palette."""
+    registry = er.async_get(hass)
+    ordered = _sorted_habits(hass)
+    fallback = DEFAULT_COLORS[ordered.index(habit) % len(DEFAULT_COLORS)]
+    return {
+        "entry_id": habit.entry_id,
+        "entity_id": registry.async_get_entity_id("sensor", DOMAIN, habit.entry_id),
+        "name": habit.name,
+        "icon": habit.icon,
+        "type": habit.habit_type,
+        "target": habit.target,
+        "color": habit.color,
+        "display_color": habit.color or fallback,
+    }
 
 
 @websocket_api.websocket_command(

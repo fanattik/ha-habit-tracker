@@ -10,12 +10,14 @@
           "target": "Denní cíl",
           "icon": "Ikona",
           "days": "Plánované dny",
-          "per_week": "Kolikrát týdně"
+          "per_week": "Kolikrát týdně",
+          "color": "Barva"
         },
         "data_description": {
           "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje.",
           "days": "Dny, kdy návyk plánuješ. Ostatní dny jdou v kartě označit taky, jen jsou ztlumené.",
-          "per_week": "Volitelné. Kolik splněných dní týdně je cíl, třeba 3. Prázdné = každý plánovaný den."
+          "per_week": "Volitelné. Kolik splněných dní týdně je cíl, třeba 3. Prázdné = každý plánovaný den.",
+          "color": "Barva návyku v kartách (tečky v kalendáři, splněné dny). Prázdné = barva se přidělí automaticky."
         }
       }
     },
@@ -34,12 +36,14 @@
           "target": "Denní cíl",
           "icon": "Ikona",
           "days": "Plánované dny",
-          "per_week": "Kolikrát týdně"
+          "per_week": "Kolikrát týdně",
+          "color": "Barva"
         },
         "data_description": {
           "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje.",
           "days": "Dny, kdy návyk plánuješ. Ostatní dny jdou v kartě označit taky, jen jsou ztlumené.",
-          "per_week": "Volitelné. Kolik splněných dní týdně je cíl, třeba 3. Prázdné = každý plánovaný den."
+          "per_week": "Volitelné. Kolik splněných dní týdně je cíl, třeba 3. Prázdné = každý plánovaný den.",
+          "color": "Barva návyku v kartách (tečky v kalendáři, splněné dny). Prázdné = barva se přidělí automaticky."
         }
       }
     },

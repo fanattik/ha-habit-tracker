@@ -18,6 +18,7 @@ from homeassistant.helpers import selector
 
 from .const import (
     ALL_DAYS,
+    CONF_COLOR,
     CONF_DAYS,
     CONF_HABIT_TYPE,
     CONF_PER_WEEK,
@@ -28,6 +29,18 @@ from .const import (
     TYPE_BOOLEAN,
     TYPE_COUNT,
 )
+
+
+def _hex_to_rgb(value: Any) -> list[int] | None:
+    if isinstance(value, str) and len(value) == 7 and value.startswith("#"):
+        return [int(value[i : i + 2], 16) for i in (1, 3, 5)]
+    return None
+
+
+def _rgb_to_hex(value: Any) -> str | None:
+    if isinstance(value, (list, tuple)) and len(value) == 3:
+        return "#{:02x}{:02x}{:02x}".format(*(max(0, min(255, int(c))) for c in value))
+    return None
 
 
 def _schema(defaults: dict[str, Any]) -> vol.Schema:
@@ -69,6 +82,10 @@ def _schema(defaults: dict[str, Any]) -> vol.Schema:
                 )
             ),
             vol.Optional(
+                CONF_COLOR,
+                description={"suggested_value": _hex_to_rgb(defaults.get(CONF_COLOR))},
+            ): selector.ColorRGBSelector(),
+            vol.Optional(
                 CONF_ICON, description={"suggested_value": defaults.get(CONF_ICON)}
             ): selector.IconSelector(),
         }
@@ -88,6 +105,7 @@ def _clean(user_input: dict[str, Any]) -> dict[str, Any]:
     per_week = user_input.get(CONF_PER_WEEK)
     data[CONF_PER_WEEK] = int(per_week) if per_week else None
     data[CONF_ICON] = user_input.get(CONF_ICON) or None
+    data[CONF_COLOR] = _rgb_to_hex(user_input.get(CONF_COLOR))
     return data
 
 

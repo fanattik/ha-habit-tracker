@@ -13,6 +13,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     ALL_DAYS,
+    CONF_COLOR,
     CONF_DAYS,
     CONF_HABIT_TYPE,
     CONF_PER_WEEK,
@@ -85,6 +86,11 @@ class Habit:
     @property
     def is_daily(self) -> bool:
         return self.weekly_goal == 7
+
+    @property
+    def color(self) -> str | None:
+        """The color the user picked, as #rrggbb, or None."""
+        return self.options.get(CONF_COLOR) or None
 
     @property
     def icon(self) -> str | None:
@@ -164,6 +170,11 @@ class Habit:
             return 0
         done = sum(1 for d in elapsed if self.is_done(d))
         return round(done * 100 / len(elapsed))
+
+    def range_values(self, start: date, end: date) -> dict[str, int]:
+        """Logged values from start to end inclusive, only days with a value."""
+        first, last = start.isoformat(), end.isoformat()
+        return {day: value for day, value in self.log.items() if first <= day <= last}
 
     def week_values(self, start: date) -> dict[str, int]:
         return {
