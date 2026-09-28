@@ -1,4 +1,9 @@
+<img src="custom_components/habit_tracker/brand/icon.png" alt="" width="96" align="right">
+
 # Habit Tracker for Home Assistant
+
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=fanattik&repository=ha-habit-tracker&category=integration)
+[![Add a habit](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=habit_tracker)
 
 A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day to mark it done.
 
@@ -12,9 +17,11 @@ A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day
 
 ## Install (HACS)
 
-1. HACS → ⋮ → *Custom repositories* → add `https://github.com/fanattik/ha-habit-tracker`, type *Integration*.
-2. Install **Habit Tracker** and restart Home Assistant.
-3. *Settings → Devices & services → Add integration → Habit Tracker*, once per habit.
+1. Click **Open in HACS** above (or HACS → ⋮ → *Custom repositories* → add `https://github.com/fanattik/ha-habit-tracker`, type *Integration*).
+2. Download **Habit Tracker** and restart Home Assistant.
+3. Click **Add a habit** above (or *Settings → Devices & services → Add integration → Habit Tracker*), once per habit.
+
+New versions are published as GitHub releases, so HACS offers them under *Settings → Updates* like any other update. The integration icon shows in Home Assistant 2026.3 and newer.
 4. Add the card to a dashboard:
 
 ```yaml
