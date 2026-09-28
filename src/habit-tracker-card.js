@@ -25,6 +25,9 @@ const STRINGS = {
   },
 };
 
+// Below this card width the name moves above the days.
+const NARROW_WIDTH = 560;
+
 const addDays = (iso, n) => {
   const d = new Date(`${iso}T12:00:00`);
   d.setDate(d.getDate() + n);
@@ -47,6 +50,24 @@ class HabitTrackerCard extends HTMLElement {
     this._editing = null; // { entryId, date, value }
     this._signature = null;
     this._loading = false;
+    this._narrow = false;
+  }
+
+  connectedCallback() {
+    if (!this._resizeObserver && window.ResizeObserver) {
+      this._resizeObserver = new ResizeObserver((entries) => {
+        const narrow = entries[0].contentRect.width < NARROW_WIDTH;
+        if (narrow !== this._narrow) {
+          this._narrow = narrow;
+          this._render();
+        }
+      });
+    }
+    if (this._resizeObserver) this._resizeObserver.observe(this);
+  }
+
+  disconnectedCallback() {
+    if (this._resizeObserver) this._resizeObserver.disconnect();
   }
 
   static getStubConfig() {
@@ -158,7 +179,7 @@ class HabitTrackerCard extends HTMLElement {
     }
     const isToday = date === today ? " today" : "";
     return `<button class="cell ${cls}${isToday}" data-entry="${esc(habit.entry_id)}" data-date="${date}"
-      ${future ? "disabled" : ""} title="${shortDate(date)}">${esc(label)}</button>`;
+      ${future ? "disabled" : ""} title="${shortDate(date)}"><span>${esc(label)}</span></button>`;
   }
 
   _editor(habit) {
@@ -232,7 +253,7 @@ class HabitTrackerCard extends HTMLElement {
       <style>${STYLE}</style>
       <ha-card>
         ${title ? `<div class="title">${esc(title)}</div>` : ""}
-        <div class="content">${body}</div>
+        <div class="content${this._narrow ? " narrow" : ""}">${body}</div>
       </ha-card>`;
     this._bind();
   }
@@ -300,10 +321,9 @@ class HabitTrackerCard extends HTMLElement {
 }
 
 const STYLE = `
-  :host { --ht-done: var(--success-color, #43a047); --ht-partial: var(--warning-color, #ffa000);
+  :host { display: block; --ht-done: var(--success-color, #43a047); --ht-partial: var(--warning-color, #ffa000);
     --ht-empty: var(--secondary-background-color, #e0e0e0); --ht-cell: 36px; }
   ha-card { display: block; padding: 12px 16px 16px; }
-  .content { container-type: inline-size; }
   .title { font-size: 1.25rem; font-weight: 500; padding: 4px 0 8px; color: var(--primary-text-color); }
   .nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; color: var(--secondary-text-color); }
   .navbtn { border: none; background: none; font-size: 1.4rem; line-height: 1; cursor: pointer; color: var(--primary-text-color); padding: 4px 10px; border-radius: 8px; }
@@ -315,7 +335,7 @@ const STYLE = `
   .row.header { box-shadow: none; background: none; padding-top: 0; padding-bottom: 0; margin-bottom: 4px; }
   .info { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .name { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 500; font-size: 1.05rem; color: var(--primary-text-color); }
-  .name span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .name span:first-of-type { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
   .name ha-icon { --mdc-icon-size: 22px; color: var(--state-icon-color, var(--primary-color)); flex: none; }
   .streak { font-size: .8rem; font-weight: 400; color: var(--secondary-text-color); white-space: nowrap; }
   .ring { width: 40px; height: 40px; flex: none; }
@@ -346,12 +366,13 @@ const STYLE = `
   .editor .primary { background: var(--primary-color); color: var(--text-primary-color, #fff); }
   .msg { color: var(--secondary-text-color); padding: 8px 0; }
   .msg.err { color: var(--error-color, #db4437); }
-  @container (max-width: 440px) {
-    .row { grid-template-columns: 1fr; }
-    .cells { gap: 4px; justify-content: space-between; grid-template-columns: repeat(7, minmax(28px, var(--ht-cell))); }
-    .cell { width: 100%; aspect-ratio: 1; height: auto; }
-    .row.header .info { display: none; }
-  }
+  /* Narrow cards put the name on its own line above the days. Toggled from
+     JS rather than a container query, which older Safari does not support. */
+  .narrow .row { grid-template-columns: 1fr; }
+  .narrow .cells { gap: 4px; justify-content: space-between; grid-template-columns: repeat(7, minmax(28px, var(--ht-cell))); }
+  .narrow .cell { width: 100%; height: auto; padding-top: 100%; position: relative; }
+  .narrow .cell > span { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
+  .narrow .row.header .info { display: none; }
 `;
 
 if (!customElements.get("habit-tracker-card")) {
