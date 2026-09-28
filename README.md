@@ -1,4 +1,4 @@
-<img src="custom_components/habit_tracker/brand/icon.png" alt="" width="96" align="right">
+<img src="https://raw.githubusercontent.com/fanattik/ha-habit-tracker/main/docs/images/banner.jpg" alt="Habit Tracker for Home Assistant">
 
 # Habit Tracker for Home Assistant
 
