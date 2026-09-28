@@ -24,7 +24,21 @@ entities:              # optional: which habits and in what order (default: all,
 show_streak: true      # optional
 ```
 
-If the card does not show up right after installing, reload the browser (or clear the app cache in the companion app).
+The card is loaded by the integration, so it only exists after Home Assistant was restarted **and at least one habit was added**. If the card is still reported as missing, reload the browser (or clear the app cache in the companion app).
+
+### Manual install (without HACS)
+
+In the Terminal add-on:
+
+```sh
+cd /config && mkdir -p custom_components \
+  && curl -sL https://github.com/fanattik/ha-habit-tracker/archive/refs/heads/main.tar.gz | tar xz \
+  && rm -rf custom_components/habit_tracker \
+  && cp -r ha-habit-tracker-main/custom_components/habit_tracker custom_components/ \
+  && rm -rf ha-habit-tracker-main
+```
+
+Then restart Home Assistant and continue with step 3.
 
 ## How it counts
 
