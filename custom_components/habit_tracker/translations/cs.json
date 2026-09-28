@@ -8,15 +8,20 @@
           "name": "Název",
           "habit_type": "Typ",
           "target": "Denní cíl",
-          "icon": "Ikona"
+          "icon": "Ikona",
+          "days": "Plánované dny",
+          "per_week": "Kolikrát týdně"
         },
         "data_description": {
-          "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje."
+          "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje.",
+          "days": "Dny, kdy návyk plánuješ. Ostatní dny jdou v kartě označit taky, jen jsou ztlumené.",
+          "per_week": "Volitelné. Kolik splněných dní týdně je cíl, třeba 3. Prázdné = každý plánovaný den."
         }
       }
     },
     "error": {
-      "empty_name": "Název nesmí být prázdný."
+      "empty_name": "Název nesmí být prázdný.",
+      "no_days": "Vyber aspoň jeden den."
     }
   },
   "options": {
@@ -27,15 +32,20 @@
           "name": "Název",
           "habit_type": "Typ",
           "target": "Denní cíl",
-          "icon": "Ikona"
+          "icon": "Ikona",
+          "days": "Plánované dny",
+          "per_week": "Kolikrát týdně"
         },
         "data_description": {
-          "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje."
+          "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje.",
+          "days": "Dny, kdy návyk plánuješ. Ostatní dny jdou v kartě označit taky, jen jsou ztlumené.",
+          "per_week": "Volitelné. Kolik splněných dní týdně je cíl, třeba 3. Prázdné = každý plánovaný den."
         }
       }
     },
     "error": {
-      "empty_name": "Název nesmí být prázdný."
+      "empty_name": "Název nesmí být prázdný.",
+      "no_days": "Vyber aspoň jeden den."
     }
   },
   "selector": {
@@ -43,6 +53,17 @@
       "options": {
         "boolean": "Splněno / nesplněno",
         "count": "Počet"
+      }
+    },
+    "days": {
+      "options": {
+        "0": "Pondělí",
+        "1": "Úterý",
+        "2": "Středa",
+        "3": "Čtvrtek",
+        "4": "Pátek",
+        "5": "Sobota",
+        "6": "Neděle"
       }
     }
   },

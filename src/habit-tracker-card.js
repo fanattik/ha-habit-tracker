@@ -7,6 +7,8 @@ const STRINGS = {
     empty: "No habits yet. Add one in Settings → Devices & services → Add integration → Habit Tracker.",
     thisWeek: "This week",
     streak: "Streak",
+    perWeek: (done, n) => `${done}/${n} this week`,
+    weeks: "wk",
     save: "Save",
     clear: "Clear",
     cancel: "Cancel",
@@ -18,6 +20,8 @@ const STRINGS = {
     empty: "Zatím žádné návyky. Přidej je v Nastavení → Zařízení a služby → Přidat integraci → Habit Tracker.",
     thisWeek: "Tento týden",
     streak: "Série",
+    perWeek: (done, n) => `${done}/${n} tento týden`,
+    weeks: "týd.",
     save: "Uložit",
     clear: "Vymazat",
     cancel: "Zrušit",
@@ -178,6 +182,9 @@ class HabitTrackerCard extends HTMLElement {
       label = "";
     }
     const isToday = date === today ? " today" : "";
+    // Days outside the plan can still be ticked, they are just dimmed.
+    const weekday = (new Date(`${date}T12:00:00`).getDay() + 6) % 7;
+    if (habit.days && habit.days.indexOf(weekday) === -1 && !done) cls += " off";
     return `<button class="cell ${cls}${isToday}" data-entry="${esc(habit.entry_id)}" data-date="${date}"
       ${future ? "disabled" : ""} title="${shortDate(date)}"><span>${esc(label)}</span></button>`;
   }
@@ -226,14 +233,19 @@ class HabitTrackerCard extends HTMLElement {
         .map((h) => {
           const cells = days.map((d) => this._cell(h, d, today)).join("");
           const icon = h.icon ? `<ha-icon icon="${esc(h.icon)}"></ha-icon>` : "";
+          const weekly = h.streak_unit === "week";
           const streak =
-            this._config.show_streak && h.streak > 1
-              ? `<span class="streak" title="${t.streak}">🔥 ${h.streak}</span>`
+            this._config.show_streak && h.streak > (weekly ? 0 : 1)
+              ? `<span class="streak" title="${t.streak}">🔥 ${h.streak}${weekly ? ` ${t.weeks}` : ""}</span>`
+              : "";
+          const goal =
+            h.weekly_goal && h.weekly_goal < 7
+              ? `<span class="goal">${esc(t.perWeek(h.week_done, h.weekly_goal))}</span>`
               : "";
           const editing = this._editing && this._editing.entryId === h.entry_id ? this._editor(h) : "";
           return `
             <div class="row">
-              <div class="info">${this._ring(h.percent)}<div class="name">${icon}<span>${esc(h.name)}</span>${streak}</div></div>
+              <div class="info">${this._ring(h.percent)}<div class="name">${icon}<span>${esc(h.name)}</span>${goal}${streak}</div></div>
               <div class="cells">${cells}</div>
               ${editing}
             </div>`;
@@ -337,6 +349,8 @@ const STYLE = `
   .name { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 500; font-size: 1.05rem; color: var(--primary-text-color); }
   .name span:first-of-type { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
   .name ha-icon { --mdc-icon-size: 22px; color: var(--state-icon-color, var(--primary-color)); flex: none; }
+  .goal { font-size: .8rem; font-weight: 400; color: var(--secondary-text-color); white-space: nowrap; }
+  .cells .cell.off { opacity: .35; }
   .streak { font-size: .8rem; font-weight: 400; color: var(--secondary-text-color); white-space: nowrap; }
   .ring { width: 40px; height: 40px; flex: none; }
   .ring-bg { fill: none; stroke: var(--ht-empty); stroke-width: 4; }

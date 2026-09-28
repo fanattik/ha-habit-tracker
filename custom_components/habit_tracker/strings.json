@@ -8,15 +8,20 @@
           "name": "Name",
           "habit_type": "Type",
           "target": "Daily target",
-          "icon": "Icon"
+          "icon": "Icon",
+          "days": "Planned days",
+          "per_week": "Times per week"
         },
         "data_description": {
-          "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done."
+          "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done.",
+          "days": "Days you plan the habit for. Other days can still be ticked in the card, they are just dimmed.",
+          "per_week": "Optional. How many done days a week is the goal, e.g. 3. Empty = every planned day."
         }
       }
     },
     "error": {
-      "empty_name": "Name cannot be empty."
+      "empty_name": "Name cannot be empty.",
+      "no_days": "Pick at least one day."
     }
   },
   "options": {
@@ -27,15 +32,20 @@
           "name": "Name",
           "habit_type": "Type",
           "target": "Daily target",
-          "icon": "Icon"
+          "icon": "Icon",
+          "days": "Planned days",
+          "per_week": "Times per week"
         },
         "data_description": {
-          "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done."
+          "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done.",
+          "days": "Days you plan the habit for. Other days can still be ticked in the card, they are just dimmed.",
+          "per_week": "Optional. How many done days a week is the goal, e.g. 3. Empty = every planned day."
         }
       }
     },
     "error": {
-      "empty_name": "Name cannot be empty."
+      "empty_name": "Name cannot be empty.",
+      "no_days": "Pick at least one day."
     }
   },
   "selector": {
@@ -43,6 +53,17 @@
       "options": {
         "boolean": "Done / not done",
         "count": "Count"
+      }
+    },
+    "days": {
+      "options": {
+        "0": "Monday",
+        "1": "Tuesday",
+        "2": "Wednesday",
+        "3": "Thursday",
+        "4": "Friday",
+        "5": "Saturday",
+        "6": "Sunday"
       }
     }
   },

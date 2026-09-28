@@ -126,3 +126,44 @@ async def test_card_resource_registered(hass: HomeAssistant) -> None:
     urls = [r["url"] for r in resources.async_items()]
     assert urls.count("/habit_tracker/habit-tracker-card.js?v=9.9.9") == 1
     assert len([u for u in urls if u.startswith("/habit_tracker/")]) == 1
+
+
+async def test_weekly_goal(hass: HomeAssistant) -> None:
+    assert await async_setup_component(hass, "http", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {
+        "name": "Cvičení", "habit_type": "boolean", "days": ["0", "2", "4"]})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    entry = result["result"]
+    await hass.async_block_till_done()
+    habit = hass.data[DOMAIN][entry.entry_id]
+    assert habit.days == [0, 2, 4] and habit.weekly_goal == 3 and not habit.is_daily
+
+    from custom_components.habit_tracker.habit import week_start
+    monday = week_start(dt_util.now().date()) - timedelta(days=14)
+    # Two weeks ago: Mon, Wed, Fri done. Last week: Tue, Thu, Sat done (off days count too).
+    for offset in (0, 2, 4, 8, 10, 12):
+        await habit.async_set_value(monday + timedelta(days=offset), 1)
+    assert habit.week_percent(monday) == 100
+    assert habit.week_percent(monday + timedelta(days=7)) == 100
+    assert habit.streak() == 2
+
+    # 3x a week on any day, then cleared back to "every planned day".
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {
+        "name": "Cvičení", "habit_type": "boolean", "days": ["0", "1", "2", "3", "4", "5", "6"], "per_week": 3})
+    await hass.async_block_till_done()
+    habit = hass.data[DOMAIN][entry.entry_id]
+    assert habit.weekly_goal == 3
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {
+        "name": "Cvičení", "habit_type": "boolean", "days": ["0", "1", "2", "3", "4", "5", "6"]})
+    await hass.async_block_till_done()
+    habit = hass.data[DOMAIN][entry.entry_id]
+    assert habit.weekly_goal == 7 and habit.is_daily
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {
+        "name": "Cvičení", "habit_type": "boolean", "days": []})
+    assert result["errors"] == {"days": "no_days"}

@@ -17,7 +17,10 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    ALL_DAYS,
+    CONF_DAYS,
     CONF_HABIT_TYPE,
+    CONF_PER_WEEK,
     CONF_ICON,
     CONF_TARGET,
     DOMAIN,
@@ -47,6 +50,24 @@ def _schema(defaults: dict[str, Any]) -> vol.Schema:
                     min=1, max=100000, step=1, mode=selector.NumberSelectorMode.BOX
                 )
             ),
+            vol.Required(
+                CONF_DAYS, default=defaults.get(CONF_DAYS, ALL_DAYS)
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=ALL_DAYS,
+                    translation_key=CONF_DAYS,
+                    multiple=True,
+                    mode=selector.SelectSelectorMode.LIST,
+                )
+            ),
+            vol.Optional(
+                CONF_PER_WEEK,
+                description={"suggested_value": defaults.get(CONF_PER_WEEK)},
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1, max=7, step=1, mode=selector.NumberSelectorMode.BOX
+                )
+            ),
             vol.Optional(
                 CONF_ICON, description={"suggested_value": defaults.get(CONF_ICON)}
             ): selector.IconSelector(),
@@ -61,8 +82,12 @@ def _clean(user_input: dict[str, Any]) -> dict[str, Any]:
     }
     if user_input[CONF_HABIT_TYPE] != TYPE_COUNT:
         data[CONF_TARGET] = 1
-    if user_input.get(CONF_ICON):
-        data[CONF_ICON] = user_input[CONF_ICON]
+    data[CONF_DAYS] = sorted(user_input.get(CONF_DAYS) or ALL_DAYS, key=int)
+    # Always store these keys, so clearing a field in the options overrides
+    # the value the habit was created with.
+    per_week = user_input.get(CONF_PER_WEEK)
+    data[CONF_PER_WEEK] = int(per_week) if per_week else None
+    data[CONF_ICON] = user_input.get(CONF_ICON) or None
     return data
 
 
@@ -79,6 +104,8 @@ class HabitTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
             name = user_input[CONF_NAME].strip()
             if not name:
                 errors[CONF_NAME] = "empty_name"
+            elif not user_input.get(CONF_DAYS):
+                errors[CONF_DAYS] = "no_days"
             else:
                 return self.async_create_entry(title=name, data=_clean(user_input))
         return self.async_show_form(
@@ -103,6 +130,8 @@ class HabitOptionsFlow(OptionsFlow):
             name = user_input[CONF_NAME].strip()
             if not name:
                 errors[CONF_NAME] = "empty_name"
+            elif not user_input.get(CONF_DAYS):
+                errors[CONF_DAYS] = "no_days"
             else:
                 if name != entry.title:
                     self.hass.config_entries.async_update_entry(entry, title=name)
