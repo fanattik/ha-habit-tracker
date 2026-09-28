@@ -28,3 +28,14 @@ jobs:
           python-version: "3.13"
       - run: pip install pytest-homeassistant-custom-component home-assistant-frontend
       - run: pytest -q
+
+  card-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: ./build.sh
+      - name: Built card matches src/
+        run: git diff --exit-code custom_components/habit_tracker/frontend/

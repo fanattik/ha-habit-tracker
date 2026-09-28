@@ -48,3 +48,7 @@ Then restart Home Assistant and continue with step 3.
 - Future days cannot be logged. Past weeks can be edited with the arrows in the card.
 
 Data is stored in `.storage/habit_tracker.<entry_id>` and is removed when the habit is deleted.
+
+## Development
+
+The card source is `src/habit-tracker-card.js`. Run `./build.sh` after changing it: it writes the served file, compiled so it also runs on older iPads and phones (Safari 12+).

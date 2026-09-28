@@ -61,6 +61,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     )
     card_url = f"{CARD_URL}?v={integration.version}"
     add_extra_js_url(hass, card_url)
+    # Older devices (e.g. iOS before 18.4) get the legacy frontend build.
+    add_extra_js_url(hass, card_url, es5=True)
     # The companion apps can keep serving a cached index page without the extra
     # JS URL, so also register the card as a dashboard resource (fetched fresh).
     await _async_register_resource(hass, card_url)
