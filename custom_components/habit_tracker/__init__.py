@@ -17,6 +17,7 @@ from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
@@ -29,6 +30,7 @@ from .const import (
     DOMAIN,
     SERVICE_SET_VALUE,
     SERVICE_TOGGLE,
+    SIGNAL_UPDATED,
 )
 from .habit import Habit, today, week_start
 
@@ -97,6 +99,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, ws_week)
     websocket_api.async_register_command(hass, ws_month)
     websocket_api.async_register_command(hass, ws_set)
+    websocket_api.async_register_command(hass, ws_subscribe)
     return True
 
 
@@ -155,6 +158,25 @@ def _parse_date(value: str | None) -> date:
         return date.fromisoformat(value)
     except ValueError as err:
         raise vol.Invalid(f"Invalid date: {value}") from err
+
+
+@websocket_api.websocket_command({vol.Required("type"): "habit_tracker/subscribe"})
+@callback
+def ws_subscribe(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Notify a card whenever any habit's log changes, so every card can reload."""
+
+    @callback
+    def forward(entry_id: str) -> None:
+        connection.send_message(
+            websocket_api.event_message(msg["id"], {"entry_id": entry_id})
+        )
+
+    connection.subscriptions[msg["id"]] = async_dispatcher_connect(
+        hass, SIGNAL_UPDATED, forward
+    )
+    connection.send_result(msg["id"])
 
 
 @websocket_api.websocket_command(

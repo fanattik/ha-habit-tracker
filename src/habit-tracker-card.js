@@ -78,10 +78,29 @@ class HabitTrackerCard extends HTMLElement {
       });
     }
     if (this._resizeObserver) this._resizeObserver.observe(this);
+    this._subscribe();
   }
 
   disconnectedCallback() {
     if (this._resizeObserver) this._resizeObserver.disconnect();
+    this._unsubscribe();
+  }
+
+  // Every change to any habit (from this card, another card or another device)
+  // reloads the card. Sensor changes alone miss ticks in past weeks.
+  _subscribe() {
+    if (this._unsub || !this._hass?.connection || !this.isConnected) return;
+    this._unsub = this._hass.connection
+      .subscribeMessage(() => this._load(), { type: "habit_tracker/subscribe" })
+      .catch(() => {
+        this._unsub = null;
+      });
+  }
+
+  _unsubscribe() {
+    const unsub = this._unsub;
+    this._unsub = null;
+    if (unsub) unsub.then((fn) => fn && fn()).catch(() => {});
   }
 
   static getStubConfig() {
@@ -103,6 +122,7 @@ class HabitTrackerCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._subscribe();
     // Reload when any habit sensor changes (a tick from another device, a new day, a new habit).
     const sig = Object.values(hass.states)
       .filter((s) => s.attributes && s.attributes.habit_type !== undefined)
