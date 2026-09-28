@@ -77,4 +77,7 @@ class HabitSensor(SensorEntity):
             "today": self._habit.value(day),
             "done_today": self._habit.is_done(day),
             "streak": self._habit.streak(day),
+            "weekly_goal": self._habit.weekly_goal,
+            "done_this_week": self._habit.week_done(week_start(day)),
+            "days": self._habit.days,
         }

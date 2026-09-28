@@ -183,6 +183,10 @@ def ws_week(
                 "values": habit.week_values(start),
                 "percent": habit.week_percent(start),
                 "streak": habit.streak(),
+                "streak_unit": "day" if habit.is_daily else "week",
+                "days": habit.days,
+                "weekly_goal": habit.weekly_goal,
+                "week_done": habit.week_done(start),
             }
         )
     result.sort(key=lambda h: h["name"].lower())

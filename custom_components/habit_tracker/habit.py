@@ -12,7 +12,10 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    ALL_DAYS,
+    CONF_DAYS,
     CONF_HABIT_TYPE,
+    CONF_PER_WEEK,
     CONF_ICON,
     CONF_TARGET,
     DOMAIN,
@@ -66,6 +69,24 @@ class Habit:
         return max(1, int(self.options.get(CONF_TARGET) or 1))
 
     @property
+    def days(self) -> list[int]:
+        """Planned weekdays, Monday = 0."""
+        days = self.options.get(CONF_DAYS) or ALL_DAYS
+        return sorted(int(d) for d in days)
+
+    @property
+    def weekly_goal(self) -> int:
+        """Done days needed per week: the set count, else one per planned day."""
+        per_week = self.options.get(CONF_PER_WEEK)
+        if per_week:
+            return max(1, min(7, int(per_week)))
+        return len(self.days)
+
+    @property
+    def is_daily(self) -> bool:
+        return self.weekly_goal == 7
+
+    @property
     def icon(self) -> str | None:
         return self.options.get(CONF_ICON) or None
 
@@ -102,19 +123,41 @@ class Habit:
             await self.async_set_value(day, 0 if self.value(day) else self.target)
 
     def streak(self, until: date | None = None) -> int:
-        """Consecutive done days ending today, or yesterday if today is open."""
+        """Daily habits: consecutive done days ending today (or yesterday).
+
+        Other habits: consecutive weeks that met the weekly goal, counting the
+        current week once it is met.
+        """
         day = until or today()
-        if not self.is_done(day):
-            day -= timedelta(days=1)
+        if self.is_daily:
+            if not self.is_done(day):
+                day -= timedelta(days=1)
+            count = 0
+            while self.is_done(day):
+                count += 1
+                day -= timedelta(days=1)
+            return count
+        start = week_start(day)
+        if self.week_done(start) < self.weekly_goal:
+            start -= timedelta(days=7)
         count = 0
-        while self.is_done(day):
+        while self.week_done(start) >= self.weekly_goal:
             count += 1
-            day -= timedelta(days=1)
+            start -= timedelta(days=7)
         return count
 
+    def week_done(self, start: date) -> int:
+        return sum(1 for i in range(7) if self.is_done(start + timedelta(days=i)))
+
     def week_percent(self, start: date, now: date | None = None) -> int:
-        """Share of done days in the week, counting only days up to today."""
+        """Progress in the week.
+
+        Daily habits count only the days up to today. Other habits show how
+        far the week is toward its goal (3 of 3 done = 100 %).
+        """
         now = now or today()
+        if not self.is_daily:
+            return min(100, round(self.week_done(start) * 100 / self.weekly_goal))
         days = [start + timedelta(days=i) for i in range(7)]
         elapsed = [d for d in days if d <= now]
         if not elapsed:

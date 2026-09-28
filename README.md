@@ -4,8 +4,9 @@ A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day
 
 - **Habits are managed in the UI.** Each habit is added in *Settings → Devices & services → Add integration → Habit Tracker* and can be edited (name, type, daily target, icon) or deleted like any other integration.
 - **Two habit types:** *done / not done*, or *count* with a daily target (e.g. 20 pushups). A count below the target shows orange, at or above the target green.
+- **Weekly goals.** Pick the planned days (e.g. Mon, Wed, Fri) and/or how many times a week counts as success (e.g. 3×). Days outside the plan are dimmed but can still be ticked.
 - **Card included.** The integration registers the `habit-tracker-card` Lovelace card automatically, no extra resource to add.
-- **Sensors for automations.** Each habit gets a sensor whose state is this week's completion in %, with attributes `today`, `done_today`, `streak`, `habit_type` and `target`.
+- **Sensors for automations.** Each habit gets a sensor whose state is this week's completion in %, with attributes `today`, `done_today`, `streak`, `weekly_goal`, `done_this_week`, `days`, `habit_type` and `target`.
 - **Services:** `habit_tracker.toggle` and `habit_tracker.set_value` (optional `date`, defaults to today), usable from automations, scripts or voice.
 
 ## Install (HACS)
@@ -43,8 +44,8 @@ Then restart Home Assistant and continue with step 3.
 ## How it counts
 
 - A day is *done* when its value reaches the target (1 for done / not done).
-- The weekly % counts only days up to today, so on Wednesday 3 of 3 days is 100 %.
-- The streak is the number of consecutive done days ending today (or yesterday, if today is still open).
+- Daily habits: the weekly % counts only days up to today, so on Wednesday 3 of 3 days is 100 %, and the streak is the number of consecutive done days ending today (or yesterday, if today is still open).
+- Habits with a weekly goal below 7: the % is progress toward the goal (2 of 3 = 67 %), and the streak counts consecutive weeks that met it.
 - Future days cannot be logged. Past weeks can be edited with the arrows in the card.
 
 Data is stored in `.storage/habit_tracker.<entry_id>` and is removed when the habit is deleted.
