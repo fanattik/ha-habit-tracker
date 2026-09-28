@@ -45,14 +45,17 @@ A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day
 3. Click **Add a habit** above (or *Settings → Devices & services → Add integration → Habit Tracker*), once per habit.
 
 New versions are published as GitHub releases, so HACS offers them under *Settings → Updates* like any other update. The integration icon shows in Home Assistant 2026.3 and newer.
-4. Add the card to a dashboard:
+
+## Add the cards to a dashboard
+
+Weekly grid:
 
 ```yaml
 type: custom:habit-tracker-card
-title: Návyky          # optional
+title: Habits          # optional
 entities:              # optional: which habits and in what order (default: all, by name)
-  - sensor.kliky
-  - sensor.zalit_kytky
+  - sensor.push_ups
+  - sensor.water_the_plants
 show_streak: true      # optional
 ```
 
@@ -60,18 +63,18 @@ Month calendar:
 
 ```yaml
 type: custom:habit-tracker-calendar-card
-title: Kalendář návyků # optional
+title: Habit calendar  # optional
 entities:              # optional, same as above
-  - sensor.cviceni
+  - sensor.morning_run
 ```
 
 Week overview, one box per habit showing whether this week's goal is met:
 
 ```yaml
 type: custom:habit-tracker-overview-card
-title: Přehled týdne   # optional
+title: Week overview   # optional
 entities:              # optional, same as above
-  - sensor.cviceni
+  - sensor.morning_run
 ```
 
 The card is loaded by the integration, so it only exists after Home Assistant was restarted **and at least one habit was added**. If the card is still reported as missing, reload the browser (or clear the app cache in the companion app).
