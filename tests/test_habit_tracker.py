@@ -167,3 +167,40 @@ async def test_weekly_goal(hass: HomeAssistant) -> None:
     result = await hass.config_entries.options.async_configure(result["flow_id"], {
         "name": "Cvičení", "habit_type": "boolean", "days": []})
     assert result["errors"] == {"days": "no_days"}
+
+
+async def test_color_and_month(hass: HomeAssistant, hass_ws_client) -> None:
+    assert await async_setup_component(hass, "http", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {
+        "name": "Běh", "habit_type": "boolean", "days": ["0", "1", "2", "3", "4", "5", "6"],
+        "color": [255, 0, 128]})
+    run = result["result"]
+    other = await _add(hass, "Zalít kytky", "boolean")
+    await hass.async_block_till_done()
+
+    today = dt_util.now().date()
+    first = today.replace(day=1)
+    await hass.data[DOMAIN][run.entry_id].async_set_value(first, 1)
+    await hass.data[DOMAIN][run.entry_id].async_set_value(first - timedelta(days=1), 1)
+
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "habit_tracker/month"})
+    res = (await ws.receive_json())["result"]
+    assert res["month_start"] == first.isoformat()
+    assert res["month_end"] >= res["month_start"]
+    by_name = {h["name"]: h for h in res["habits"]}
+    assert by_name["Běh"]["color"] == "#ff0080"
+    assert by_name["Běh"]["display_color"] == "#ff0080"
+    assert by_name["Běh"]["values"] == {first.isoformat(): 1}  # previous month excluded
+    assert by_name["Zalít kytky"]["color"] is None
+    assert by_name["Zalít kytky"]["display_color"].startswith("#")
+
+    # Clearing the color in the options falls back to the palette.
+    result = await hass.config_entries.options.async_init(run.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {
+        "name": "Běh", "habit_type": "boolean", "days": ["0", "1", "2", "3", "4", "5", "6"]})
+    await hass.async_block_till_done()
+    assert hass.data[DOMAIN][run.entry_id].color is None
+    assert other.entry_id in hass.data[DOMAIN]

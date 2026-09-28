@@ -10,12 +10,14 @@
           "target": "Daily target",
           "icon": "Icon",
           "days": "Planned days",
-          "per_week": "Times per week"
+          "per_week": "Times per week",
+          "color": "Color"
         },
         "data_description": {
           "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done.",
           "days": "Days you plan the habit for. Other days can still be ticked in the card, they are just dimmed.",
-          "per_week": "Optional. How many done days a week is the goal, e.g. 3. Empty = every planned day."
+          "per_week": "Optional. How many done days a week is the goal, e.g. 3. Empty = every planned day.",
+          "color": "The habit's color in the cards (calendar dots, done days). Empty = picked automatically."
         }
       }
     },
@@ -34,12 +36,14 @@
           "target": "Daily target",
           "icon": "Icon",
           "days": "Planned days",
-          "per_week": "Times per week"
+          "per_week": "Times per week",
+          "color": "Color"
         },
         "data_description": {
           "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done.",
           "days": "Days you plan the habit for. Other days can still be ticked in the card, they are just dimmed.",
-          "per_week": "Optional. How many done days a week is the goal, e.g. 3. Empty = every planned day."
+          "per_week": "Optional. How many done days a week is the goal, e.g. 3. Empty = every planned day.",
+          "color": "The habit's color in the cards (calendar dots, done days). Empty = picked automatically."
         }
       }
     },

@@ -11,7 +11,9 @@ const STRINGS = {
     save: "Save",
     clear: "Clear",
     cancel: "Cancel",
-    error: "Could not load habits"
+    error: "Could not load habits",
+    calendarTitle: "Habit calendar",
+    future: "This day has not come yet."
   },
   cs: {
     title: "N\xE1vyky",
@@ -24,7 +26,9 @@ const STRINGS = {
     save: "Ulo\u017Eit",
     clear: "Vymazat",
     cancel: "Zru\u0161it",
-    error: "N\xE1vyky se nepoda\u0159ilo na\u010D\xEDst"
+    error: "N\xE1vyky se nepoda\u0159ilo na\u010D\xEDst",
+    calendarTitle: "Kalend\xE1\u0159 n\xE1vyk\u016F",
+    future: "Tento den je\u0161t\u011B nenastal."
   }
 };
 const NARROW_WIDTH = 560;
@@ -100,9 +104,7 @@ class HabitTrackerCard extends HTMLElement {
     this._loading = true;
     this._reloadPending = false;
     try {
-      const msg = { type: "habit_tracker/week" };
-      if (this._weekDate) msg.date = this._weekDate;
-      this._data = await this._hass.callWS(msg);
+      this._data = await this._hass.callWS(this._request());
       this._error = null;
     } catch (err) {
       this._error = (err == null ? void 0 : err.message) || String(err);
@@ -111,6 +113,11 @@ class HabitTrackerCard extends HTMLElement {
     }
     this._render();
     if (this._reloadPending) this._load();
+  }
+  _request() {
+    const msg = { type: "habit_tracker/week" };
+    if (this._weekDate) msg.date = this._weekDate;
+    return msg;
   }
   async _setValue(entryId, date, value) {
     try {
@@ -154,7 +161,8 @@ class HabitTrackerCard extends HTMLElement {
     const isToday = date === today ? " today" : "";
     const weekday = (new Date("".concat(date, "T12:00:00")).getDay() + 6) % 7;
     if (habit.days && habit.days.indexOf(weekday) === -1 && !done) cls += " off";
-    return '<button class="cell '.concat(cls).concat(isToday, '" data-entry="').concat(esc(habit.entry_id), '" data-date="').concat(date, '"\n      ').concat(future ? "disabled" : "", ' title="').concat(shortDate(date), '"><span>').concat(esc(label), "</span></button>");
+    const color = done && habit.color ? ' style="background:'.concat(esc(habit.color), '"') : "";
+    return '<button class="cell '.concat(cls).concat(isToday, '"').concat(color, ' data-entry="').concat(esc(habit.entry_id), '" data-date="').concat(date, '"\n      ').concat(future ? "disabled" : "", ' title="').concat(shortDate(date), '"><span>').concat(esc(label), "</span></button>");
   }
   _editor(habit) {
     const ed = this._editing;
@@ -258,6 +266,135 @@ class HabitTrackerCard extends HTMLElement {
   }
 }
 const STYLE = "\n  :host { display: block; --ht-done: var(--success-color, #43a047); --ht-partial: var(--warning-color, #ffa000);\n    --ht-empty: var(--secondary-background-color, #e0e0e0); --ht-cell: 36px; }\n  ha-card { display: block; padding: 12px 16px 16px; }\n  .title { font-size: 1.25rem; font-weight: 500; padding: 4px 0 8px; color: var(--primary-text-color); }\n  .nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; color: var(--secondary-text-color); }\n  .navbtn { border: none; background: none; font-size: 1.4rem; line-height: 1; cursor: pointer; color: var(--primary-text-color); padding: 4px 10px; border-radius: 8px; }\n  .navbtn:disabled { opacity: .25; cursor: default; }\n  .navbtn:not(:disabled):hover { background: var(--ht-empty); }\n  .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px;\n    padding: 8px 10px; margin-bottom: 8px; border-radius: 14px; background: var(--card-background-color);\n    box-shadow: 0 0 0 1px var(--divider-color, rgba(0,0,0,.12)); }\n  .row.header { box-shadow: none; background: none; padding-top: 0; padding-bottom: 0; margin-bottom: 4px; }\n  .info { display: flex; align-items: center; gap: 10px; min-width: 0; }\n  .name { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 500; font-size: 1.05rem; color: var(--primary-text-color); }\n  .name span:first-of-type { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }\n  .name ha-icon { --mdc-icon-size: 22px; color: var(--state-icon-color, var(--primary-color)); flex: none; }\n  .goal { font-size: .8rem; font-weight: 400; color: var(--secondary-text-color); white-space: nowrap; }\n  .cells .cell.off { opacity: .35; }\n  .streak { font-size: .8rem; font-weight: 400; color: var(--secondary-text-color); white-space: nowrap; }\n  .ring { width: 40px; height: 40px; flex: none; }\n  .ring-bg { fill: none; stroke: var(--ht-empty); stroke-width: 4; }\n  .ring-fg { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray .3s; }\n  .ring text { font-size: 9.5px; letter-spacing: -.3px; text-anchor: middle; dominant-baseline: middle; fill: var(--primary-text-color); }\n  .cells { display: grid; grid-template-columns: repeat(7, var(--ht-cell)); gap: 6px; }\n  .day { display: flex; flex-direction: column; align-items: center; font-size: .75rem; color: var(--secondary-text-color); line-height: 1.2; }\n  .day b { font-size: .85rem; color: var(--primary-text-color); }\n  .day.today b, .day.today span { color: var(--primary-color); }\n  .cell { width: var(--ht-cell); height: var(--ht-cell); border-radius: 50%; border: none; padding: 0; cursor: pointer;\n    font: 600 .9rem/1 var(--paper-font-body1_-_font-family, sans-serif); display: flex; align-items: center; justify-content: center;\n    transition: transform .1s, background .2s; }\n  .cell:not(:disabled):active { transform: scale(.9); }\n  .cell.empty { background: var(--ht-empty); color: var(--secondary-text-color); opacity: .8; }\n  .cell.done { background: var(--ht-done); color: #fff; }\n  .cell.partial { background: var(--ht-partial); color: #fff; }\n  .cell.future { background: transparent; box-shadow: inset 0 0 0 2px var(--ht-empty); cursor: default; }\n  .cell.today { outline: 2px solid var(--primary-color); outline-offset: 2px; }\n  .editor { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding-top: 4px; }\n  .editor input { width: 72px; padding: 6px 8px; font-size: 1rem; border-radius: 8px; border: 1px solid var(--divider-color);\n    background: var(--card-background-color); color: var(--primary-text-color); }\n  .editor .ed-date, .editor .target { color: var(--secondary-text-color); }\n  .editor .spacer { flex: 1; }\n  .editor button { border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: .95rem;\n    background: var(--ht-empty); color: var(--primary-text-color); }\n  .editor .step { width: 34px; padding: 6px 0; font-size: 1.1rem; }\n  .editor .primary { background: var(--primary-color); color: var(--text-primary-color, #fff); }\n  .msg { color: var(--secondary-text-color); padding: 8px 0; }\n  .msg.err { color: var(--error-color, #db4437); }\n  /* Narrow cards put the name on its own line above the days. Toggled from\n     JS rather than a container query, which older Safari does not support. */\n  .narrow .row { grid-template-columns: 1fr; }\n  .narrow .cells { gap: 4px; justify-content: space-between; grid-template-columns: repeat(7, minmax(28px, var(--ht-cell))); }\n  .narrow .cell { width: 100%; height: auto; padding-top: 100%; position: relative; }\n  .narrow .cell > span { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }\n  .narrow .row.header .info { display: none; }\n";
+class HabitCalendarCard extends HabitTrackerCard {
+  constructor() {
+    super();
+    this._monthDate = null;
+    this._selected = null;
+  }
+  getCardSize() {
+    return 9;
+  }
+  getGridOptions() {
+    return { columns: 12, min_columns: 6 };
+  }
+  _request() {
+    const msg = { type: "habit_tracker/month" };
+    if (this._monthDate) msg.date = this._monthDate;
+    return msg;
+  }
+  get _lang() {
+    var _a, _b, _c;
+    return (((_b = (_a = this._hass) == null ? void 0 : _a.locale) == null ? void 0 : _b.language) || ((_c = this._hass) == null ? void 0 : _c.language) || "en").split("-")[0];
+  }
+  _format(iso, options) {
+    const text = new Date("".concat(iso, "T12:00:00")).toLocaleDateString(this._lang, options);
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+  _dots(habits, date) {
+    return habits.map((h) => {
+      const value = h.values[date] || 0;
+      if (!value) return "";
+      const done = value >= h.target;
+      const color = esc(h.display_color);
+      return '<i class="dot'.concat(done ? "" : " part", '" style="').concat(done ? "background:".concat(color) : "border-color:".concat(color), '" title="').concat(esc(h.name), '"></i>');
+    }).join("");
+  }
+  _dayPanel(habits, date, today) {
+    const t = this._t;
+    const heading = this._format(date, { weekday: "long", day: "numeric", month: "numeric" });
+    if (date > today) {
+      return '<div class="panel"><div class="panel-title">'.concat(esc(heading), '</div><div class="msg">').concat(t.future, "</div></div>");
+    }
+    const rows = habits.map((h) => {
+      const value = h.values[date] || 0;
+      const done = value >= h.target;
+      const color = esc(h.display_color);
+      const icon = h.icon ? '<ha-icon icon="'.concat(esc(h.icon), '"></ha-icon>') : "";
+      const control = h.type === "count" ? '<div class="counter">\n                 <button class="step" data-entry="'.concat(esc(h.entry_id), '" data-step="-1">\u2212</button>\n                 <span class="count').concat(done ? " ok" : "", '" style="').concat(done ? "color:".concat(color) : "", '">').concat(value, "<small>/").concat(h.target, '</small></span>\n                 <button class="step" data-entry="').concat(esc(h.entry_id), '" data-step="1">+</button>\n               </div>') : '<button class="toggle'.concat(done ? " on" : "", '" data-entry="').concat(esc(h.entry_id), '"\n                 style="').concat(done ? "background:".concat(color, ";border-color:").concat(color) : "border-color:".concat(color), '"\n                 aria-pressed="').concat(done, '">').concat(done ? "\u2713" : "", "</button>");
+      return '\n          <div class="habit">\n            <i class="dot big" style="background:'.concat(color, '"></i>\n            <div class="hname">').concat(icon, "<span>").concat(esc(h.name), "</span></div>\n            ").concat(control, "\n          </div>");
+    }).join("");
+    return '<div class="panel"><div class="panel-title">'.concat(esc(heading), "</div>").concat(rows, "</div>");
+  }
+  _render() {
+    var _a;
+    if (!this._config) return;
+    const t = this._t;
+    const data = this._data;
+    const title = (_a = this._config.title) != null ? _a : t.calendarTitle;
+    let body = "";
+    if (this._error && !data) {
+      body = '<div class="msg">'.concat(t.error, ": ").concat(esc(this._error), "</div>");
+    } else if (!data) {
+      body = '<div class="msg">\u2026</div>';
+    } else {
+      const habits = this._habits();
+      const { month_start: first, month_end: last, today } = data;
+      if (!this._selected || this._selected < first || this._selected > last) {
+        this._selected = today >= first && today <= last ? today : first;
+      }
+      const isCurrent = today >= first && today <= last;
+      const offset = (new Date("".concat(first, "T12:00:00")).getDay() + 6) % 7;
+      const count = Number(last.slice(8, 10));
+      let cells = "";
+      for (let i = 0; i < offset; i++) cells += '<div class="blank"></div>';
+      for (let i = 0; i < count; i++) {
+        const date = addDays(first, i);
+        const cls = [
+          "mday",
+          date === today ? "today" : "",
+          date === this._selected ? "selected" : "",
+          date > today ? "future" : ""
+        ].join(" ");
+        cells += '<button class="'.concat(cls, '" data-date="').concat(date, '"><span class="num">').concat(i + 1, '</span><span class="dots">').concat(this._dots(habits, date), "</span></button>");
+      }
+      const head = t.days.map((d) => '<div class="wd">'.concat(d, "</div>")).join("");
+      body = '\n        <div class="nav">\n          <button class="navbtn" data-nav="-1" aria-label="previous month">\u2039</button>\n          <span class="week">'.concat(esc(this._format(first, { month: "long", year: "numeric" })), '</span>\n          <button class="navbtn" data-nav="1" aria-label="next month" ').concat(isCurrent ? "disabled" : "", ">\u203A</button>\n        </div>\n        ").concat(habits.length ? '<div class="month">'.concat(head).concat(cells, "</div>").concat(this._dayPanel(habits, this._selected, today)) : '<div class="msg">'.concat(t.empty, "</div>"), "\n        ").concat(this._error ? '<div class="msg err">'.concat(esc(this._error), "</div>") : "");
+    }
+    this.shadowRoot.innerHTML = "\n      <style>".concat(STYLE).concat(CAL_STYLE, "</style>\n      <ha-card>\n        ").concat(title ? '<div class="title">'.concat(esc(title), "</div>") : "", '\n        <div class="content').concat(this._narrow ? " narrow" : "", '">').concat(body, "</div>\n      </ha-card>");
+    this._bind();
+  }
+  _bind() {
+    const root = this.shadowRoot;
+    root.querySelectorAll(".navbtn").forEach(
+      (b) => b.addEventListener("click", () => {
+        const d = new Date("".concat(this._data.month_start, "T12:00:00"));
+        d.setMonth(d.getMonth() + Number(b.dataset.nav));
+        const next = d.toISOString().slice(0, 10);
+        this._monthDate = next > this._data.today ? null : next;
+        this._selected = null;
+        this._load();
+      })
+    );
+    root.querySelectorAll(".mday").forEach(
+      (b) => b.addEventListener("click", () => {
+        this._selected = b.dataset.date;
+        this._render();
+      })
+    );
+    const change = (entryId, value) => {
+      const habit = this._data.habits.find((h) => h.entry_id === entryId);
+      if (!habit) return;
+      value = Math.max(0, value);
+      habit.values[this._selected] = value;
+      this._render();
+      this._setValue(entryId, this._selected, value);
+    };
+    root.querySelectorAll(".toggle").forEach(
+      (b) => b.addEventListener("click", () => {
+        const habit = this._data.habits.find((h) => h.entry_id === b.dataset.entry);
+        change(b.dataset.entry, habit.values[this._selected] || 0 ? 0 : 1);
+      })
+    );
+    root.querySelectorAll(".counter .step").forEach(
+      (b) => b.addEventListener("click", () => {
+        const habit = this._data.habits.find((h) => h.entry_id === b.dataset.entry);
+        change(b.dataset.entry, (habit.values[this._selected] || 0) + Number(b.dataset.step));
+      })
+    );
+  }
+}
+const CAL_STYLE = "\n  .month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }\n  .wd { text-align: center; font-size: .8rem; font-weight: 600; color: var(--secondary-text-color); padding-bottom: 4px; }\n  .mday { border: none; background: none; border-radius: 10px; padding: 6px 2px 4px; min-height: 52px; cursor: pointer;\n    display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--primary-text-color);\n    font: inherit; }\n  .mday:hover { background: var(--ht-empty); }\n  .mday .num { font-size: .95rem; line-height: 1; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }\n  .mday.today .num { background: var(--primary-color); color: var(--text-primary-color, #fff); font-weight: 600; }\n  .mday.selected { background: var(--ht-empty); box-shadow: inset 0 0 0 2px var(--primary-color); }\n  .mday.future { opacity: .4; }\n  .dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 100%; min-height: 7px; }\n  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; }\n  .dot.part { background: none; border: 1.5px solid; width: 4px; height: 4px; }\n  .dot.big { width: 12px; height: 12px; }\n  .panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider-color); }\n  .panel-title { font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color); }\n  .habit { display: flex; align-items: center; gap: 10px; padding: 6px 0; }\n  .hname { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--primary-text-color); }\n  .hname span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n  .hname ha-icon { --mdc-icon-size: 20px; color: var(--secondary-text-color); flex: none; }\n  .toggle { width: 34px; height: 34px; border-radius: 50%; border: 2px solid; background: none; cursor: pointer;\n    color: #fff; font-size: 1rem; font-weight: 700; flex: none; }\n  .counter { display: flex; align-items: center; gap: 6px; flex: none; }\n  .counter .step { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--ht-empty);\n    color: var(--primary-text-color); font-size: 1.1rem; cursor: pointer; }\n  .count { min-width: 48px; text-align: center; font-weight: 600; color: var(--primary-text-color); }\n  .count small { font-weight: 400; color: var(--secondary-text-color); }\n";
 if (!customElements.get("habit-tracker-card")) {
   customElements.define("habit-tracker-card", HabitTrackerCard);
   window.customCards = window.customCards || [];
@@ -265,6 +402,16 @@ if (!customElements.get("habit-tracker-card")) {
     type: "habit-tracker-card",
     name: "Habit Tracker",
     description: "Weekly grid of habits you can tick off.",
+    preview: true
+  });
+}
+if (!customElements.get("habit-tracker-calendar-card")) {
+  customElements.define("habit-tracker-calendar-card", HabitCalendarCard);
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "habit-tracker-calendar-card",
+    name: "Habit Tracker: calendar",
+    description: "Month calendar with a colored dot per done habit.",
     preview: true
   });
 }

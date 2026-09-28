@@ -5,7 +5,8 @@ A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day
 - **Habits are managed in the UI.** Each habit is added in *Settings → Devices & services → Add integration → Habit Tracker* and can be edited (name, type, daily target, icon) or deleted like any other integration.
 - **Two habit types:** *done / not done*, or *count* with a daily target (e.g. 20 pushups). A count below the target shows orange, at or above the target green.
 - **Weekly goals.** Pick the planned days (e.g. Mon, Wed, Fri) and/or how many times a week counts as success (e.g. 3×). Days outside the plan are dimmed but can still be ticked.
-- **Card included.** The integration registers the `habit-tracker-card` Lovelace card automatically, no extra resource to add.
+- **Colors.** Each habit can have its own color (otherwise one is assigned automatically).
+- **Two cards included**, registered automatically: the weekly grid `habit-tracker-card` and the month calendar `habit-tracker-calendar-card`, where each done habit shows as a colored dot under the day and clicking a day lists all habits to tick off.
 - **Sensors for automations.** Each habit gets a sensor whose state is this week's completion in %, with attributes `today`, `done_today`, `streak`, `weekly_goal`, `done_this_week`, `days`, `habit_type` and `target`.
 - **Services:** `habit_tracker.toggle` and `habit_tracker.set_value` (optional `date`, defaults to today), usable from automations, scripts or voice.
 
@@ -23,6 +24,15 @@ entities:              # optional: which habits and in what order (default: all,
   - sensor.kliky
   - sensor.zalit_kytky
 show_streak: true      # optional
+```
+
+Month calendar:
+
+```yaml
+type: custom:habit-tracker-calendar-card
+title: Kalendář návyků # optional
+entities:              # optional, same as above
+  - sensor.cviceni
 ```
 
 The card is loaded by the integration, so it only exists after Home Assistant was restarted **and at least one habit was added**. If the card is still reported as missing, reload the browser (or clear the app cache in the companion app).

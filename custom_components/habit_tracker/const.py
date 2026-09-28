@@ -7,6 +7,13 @@ CONF_TARGET = "target"
 CONF_ICON = "icon"
 CONF_DAYS = "days"
 CONF_PER_WEEK = "per_week"
+CONF_COLOR = "color"
+
+# Used in order for habits without their own color.
+DEFAULT_COLORS = [
+    "#43a047", "#1e88e5", "#fb8c00", "#8e24aa",
+    "#e53935", "#00acc1", "#fdd835", "#6d4c41",
+]
 
 ALL_DAYS = ["0", "1", "2", "3", "4", "5", "6"]  # Monday = "0"
 

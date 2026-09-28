@@ -13,6 +13,8 @@ const STRINGS = {
     clear: "Clear",
     cancel: "Cancel",
     error: "Could not load habits",
+    calendarTitle: "Habit calendar",
+    future: "This day has not come yet.",
   },
   cs: {
     title: "Návyky",
@@ -26,6 +28,8 @@ const STRINGS = {
     clear: "Vymazat",
     cancel: "Zrušit",
     error: "Návyky se nepodařilo načíst",
+    calendarTitle: "Kalendář návyků",
+    future: "Tento den ještě nenastal.",
   },
 };
 
@@ -118,9 +122,7 @@ class HabitTrackerCard extends HTMLElement {
     this._loading = true;
     this._reloadPending = false;
     try {
-      const msg = { type: "habit_tracker/week" };
-      if (this._weekDate) msg.date = this._weekDate;
-      this._data = await this._hass.callWS(msg);
+      this._data = await this._hass.callWS(this._request());
       this._error = null;
     } catch (err) {
       this._error = err?.message || String(err);
@@ -129,6 +131,12 @@ class HabitTrackerCard extends HTMLElement {
     }
     this._render();
     if (this._reloadPending) this._load();
+  }
+
+  _request() {
+    const msg = { type: "habit_tracker/week" };
+    if (this._weekDate) msg.date = this._weekDate;
+    return msg;
   }
 
   async _setValue(entryId, date, value) {
@@ -185,7 +193,8 @@ class HabitTrackerCard extends HTMLElement {
     // Days outside the plan can still be ticked, they are just dimmed.
     const weekday = (new Date(`${date}T12:00:00`).getDay() + 6) % 7;
     if (habit.days && habit.days.indexOf(weekday) === -1 && !done) cls += " off";
-    return `<button class="cell ${cls}${isToday}" data-entry="${esc(habit.entry_id)}" data-date="${date}"
+    const color = done && habit.color ? ` style="background:${esc(habit.color)}"` : "";
+    return `<button class="cell ${cls}${isToday}"${color} data-entry="${esc(habit.entry_id)}" data-date="${date}"
       ${future ? "disabled" : ""} title="${shortDate(date)}"><span>${esc(label)}</span></button>`;
   }
 
@@ -389,6 +398,208 @@ const STYLE = `
   .narrow .row.header .info { display: none; }
 `;
 
+
+/* Habit calendar card: a month grid with a dot per done habit; pick a day to tick habits off. */
+class HabitCalendarCard extends HabitTrackerCard {
+  constructor() {
+    super();
+    this._monthDate = null; // any day inside the shown month; null = current month
+    this._selected = null; // ISO date of the open day
+  }
+
+  getCardSize() {
+    return 9;
+  }
+
+  getGridOptions() {
+    return { columns: 12, min_columns: 6 };
+  }
+
+  _request() {
+    const msg = { type: "habit_tracker/month" };
+    if (this._monthDate) msg.date = this._monthDate;
+    return msg;
+  }
+
+  get _lang() {
+    return (this._hass?.locale?.language || this._hass?.language || "en").split("-")[0];
+  }
+
+  _format(iso, options) {
+    const text = new Date(`${iso}T12:00:00`).toLocaleDateString(this._lang, options);
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  _dots(habits, date) {
+    return habits
+      .map((h) => {
+        const value = h.values[date] || 0;
+        if (!value) return "";
+        const done = value >= h.target;
+        const color = esc(h.display_color);
+        return `<i class="dot${done ? "" : " part"}" style="${done ? `background:${color}` : `border-color:${color}`}" title="${esc(h.name)}"></i>`;
+      })
+      .join("");
+  }
+
+  _dayPanel(habits, date, today) {
+    const t = this._t;
+    const heading = this._format(date, { weekday: "long", day: "numeric", month: "numeric" });
+    if (date > today) {
+      return `<div class="panel"><div class="panel-title">${esc(heading)}</div><div class="msg">${t.future}</div></div>`;
+    }
+    const rows = habits
+      .map((h) => {
+        const value = h.values[date] || 0;
+        const done = value >= h.target;
+        const color = esc(h.display_color);
+        const icon = h.icon ? `<ha-icon icon="${esc(h.icon)}"></ha-icon>` : "";
+        const control =
+          h.type === "count"
+            ? `<div class="counter">
+                 <button class="step" data-entry="${esc(h.entry_id)}" data-step="-1">−</button>
+                 <span class="count${done ? " ok" : ""}" style="${done ? `color:${color}` : ""}">${value}<small>/${h.target}</small></span>
+                 <button class="step" data-entry="${esc(h.entry_id)}" data-step="1">+</button>
+               </div>`
+            : `<button class="toggle${done ? " on" : ""}" data-entry="${esc(h.entry_id)}"
+                 style="${done ? `background:${color};border-color:${color}` : `border-color:${color}`}"
+                 aria-pressed="${done}">${done ? "✓" : ""}</button>`;
+        return `
+          <div class="habit">
+            <i class="dot big" style="background:${color}"></i>
+            <div class="hname">${icon}<span>${esc(h.name)}</span></div>
+            ${control}
+          </div>`;
+      })
+      .join("");
+    return `<div class="panel"><div class="panel-title">${esc(heading)}</div>${rows}</div>`;
+  }
+
+  _render() {
+    if (!this._config) return;
+    const t = this._t;
+    const data = this._data;
+    const title = this._config.title ?? t.calendarTitle;
+    let body = "";
+
+    if (this._error && !data) {
+      body = `<div class="msg">${t.error}: ${esc(this._error)}</div>`;
+    } else if (!data) {
+      body = `<div class="msg">…</div>`;
+    } else {
+      const habits = this._habits();
+      const { month_start: first, month_end: last, today } = data;
+      if (!this._selected || this._selected < first || this._selected > last) {
+        this._selected = today >= first && today <= last ? today : first;
+      }
+      const isCurrent = today >= first && today <= last;
+      const offset = (new Date(`${first}T12:00:00`).getDay() + 6) % 7;
+      const count = Number(last.slice(8, 10));
+      let cells = "";
+      for (let i = 0; i < offset; i++) cells += `<div class="blank"></div>`;
+      for (let i = 0; i < count; i++) {
+        const date = addDays(first, i);
+        const cls = [
+          "mday",
+          date === today ? "today" : "",
+          date === this._selected ? "selected" : "",
+          date > today ? "future" : "",
+        ].join(" ");
+        cells += `<button class="${cls}" data-date="${date}"><span class="num">${i + 1}</span><span class="dots">${this._dots(habits, date)}</span></button>`;
+      }
+      const head = t.days.map((d) => `<div class="wd">${d}</div>`).join("");
+      body = `
+        <div class="nav">
+          <button class="navbtn" data-nav="-1" aria-label="previous month">‹</button>
+          <span class="week">${esc(this._format(first, { month: "long", year: "numeric" }))}</span>
+          <button class="navbtn" data-nav="1" aria-label="next month" ${isCurrent ? "disabled" : ""}>›</button>
+        </div>
+        ${habits.length
+          ? `<div class="month">${head}${cells}</div>${this._dayPanel(habits, this._selected, today)}`
+          : `<div class="msg">${t.empty}</div>`}
+        ${this._error ? `<div class="msg err">${esc(this._error)}</div>` : ""}`;
+    }
+
+    this.shadowRoot.innerHTML = `
+      <style>${STYLE}${CAL_STYLE}</style>
+      <ha-card>
+        ${title ? `<div class="title">${esc(title)}</div>` : ""}
+        <div class="content${this._narrow ? " narrow" : ""}">${body}</div>
+      </ha-card>`;
+    this._bind();
+  }
+
+  _bind() {
+    const root = this.shadowRoot;
+    root.querySelectorAll(".navbtn").forEach((b) =>
+      b.addEventListener("click", () => {
+        const d = new Date(`${this._data.month_start}T12:00:00`);
+        d.setMonth(d.getMonth() + Number(b.dataset.nav));
+        const next = d.toISOString().slice(0, 10);
+        this._monthDate = next > this._data.today ? null : next;
+        this._selected = null;
+        this._load();
+      })
+    );
+    root.querySelectorAll(".mday").forEach((b) =>
+      b.addEventListener("click", () => {
+        this._selected = b.dataset.date;
+        this._render();
+      })
+    );
+    const change = (entryId, value) => {
+      const habit = this._data.habits.find((h) => h.entry_id === entryId);
+      if (!habit) return;
+      value = Math.max(0, value);
+      habit.values[this._selected] = value; // optimistic
+      this._render();
+      this._setValue(entryId, this._selected, value);
+    };
+    root.querySelectorAll(".toggle").forEach((b) =>
+      b.addEventListener("click", () => {
+        const habit = this._data.habits.find((h) => h.entry_id === b.dataset.entry);
+        change(b.dataset.entry, (habit.values[this._selected] || 0) ? 0 : 1);
+      })
+    );
+    root.querySelectorAll(".counter .step").forEach((b) =>
+      b.addEventListener("click", () => {
+        const habit = this._data.habits.find((h) => h.entry_id === b.dataset.entry);
+        change(b.dataset.entry, (habit.values[this._selected] || 0) + Number(b.dataset.step));
+      })
+    );
+  }
+}
+
+const CAL_STYLE = `
+  .month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .wd { text-align: center; font-size: .8rem; font-weight: 600; color: var(--secondary-text-color); padding-bottom: 4px; }
+  .mday { border: none; background: none; border-radius: 10px; padding: 6px 2px 4px; min-height: 52px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--primary-text-color);
+    font: inherit; }
+  .mday:hover { background: var(--ht-empty); }
+  .mday .num { font-size: .95rem; line-height: 1; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .mday.today .num { background: var(--primary-color); color: var(--text-primary-color, #fff); font-weight: 600; }
+  .mday.selected { background: var(--ht-empty); box-shadow: inset 0 0 0 2px var(--primary-color); }
+  .mday.future { opacity: .4; }
+  .dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 100%; min-height: 7px; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .dot.part { background: none; border: 1.5px solid; width: 4px; height: 4px; }
+  .dot.big { width: 12px; height: 12px; }
+  .panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider-color); }
+  .panel-title { font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color); }
+  .habit { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .hname { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--primary-text-color); }
+  .hname span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hname ha-icon { --mdc-icon-size: 20px; color: var(--secondary-text-color); flex: none; }
+  .toggle { width: 34px; height: 34px; border-radius: 50%; border: 2px solid; background: none; cursor: pointer;
+    color: #fff; font-size: 1rem; font-weight: 700; flex: none; }
+  .counter { display: flex; align-items: center; gap: 6px; flex: none; }
+  .counter .step { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--ht-empty);
+    color: var(--primary-text-color); font-size: 1.1rem; cursor: pointer; }
+  .count { min-width: 48px; text-align: center; font-weight: 600; color: var(--primary-text-color); }
+  .count small { font-weight: 400; color: var(--secondary-text-color); }
+`;
+
 if (!customElements.get("habit-tracker-card")) {
   customElements.define("habit-tracker-card", HabitTrackerCard);
   window.customCards = window.customCards || [];
@@ -396,6 +607,17 @@ if (!customElements.get("habit-tracker-card")) {
     type: "habit-tracker-card",
     name: "Habit Tracker",
     description: "Weekly grid of habits you can tick off.",
+    preview: true,
+  });
+}
+
+if (!customElements.get("habit-tracker-calendar-card")) {
+  customElements.define("habit-tracker-calendar-card", HabitCalendarCard);
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "habit-tracker-calendar-card",
+    name: "Habit Tracker: calendar",
+    description: "Month calendar with a colored dot per done habit.",
     preview: true,
   });
 }
