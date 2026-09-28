@@ -204,3 +204,21 @@ async def test_color_and_month(hass: HomeAssistant, hass_ws_client) -> None:
     await hass.async_block_till_done()
     assert hass.data[DOMAIN][run.entry_id].color is None
     assert other.entry_id in hass.data[DOMAIN]
+
+
+async def test_subscribe_notifies_on_past_change(hass: HomeAssistant, hass_ws_client) -> None:
+    assert await async_setup_component(hass, "http", {})
+    entry = await _add(hass, "Kolo", "boolean")
+    await hass.async_block_till_done()
+
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "habit_tracker/subscribe"})
+    assert (await ws.receive_json())["success"]
+
+    # A tick in a past week does not change the sensor, but cards must still hear about it.
+    past = dt_util.now().date() - timedelta(days=10)
+    await hass.data[DOMAIN][entry.entry_id].async_set_value(past, 1)
+    msg = await ws.receive_json()
+    assert msg["id"] == 1
+    assert msg["type"] == "event"
+    assert msg["event"] == {"entry_id": entry.entry_id}
