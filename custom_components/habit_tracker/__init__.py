@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,8 @@ from .const import (
 )
 from .habit import Habit, today, week_start
 
+_LOGGER = logging.getLogger(__name__)
+
 PLATFORMS = [Platform.SENSOR]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -56,7 +59,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     await hass.http.async_register_static_paths(
         [StaticPathConfig(CARD_URL, str(card_path), True)]
     )
-    add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}")
+    card_url = f"{CARD_URL}?v={integration.version}"
+    add_extra_js_url(hass, card_url)
+    # The companion apps can keep serving a cached index page without the extra
+    # JS URL, so also register the card as a dashboard resource (fetched fresh).
+    await _async_register_resource(hass, card_url)
 
     def habits_for_call(call: ServiceCall) -> list[Habit]:
         registry = er.async_get(hass)
@@ -87,6 +94,30 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, ws_week)
     websocket_api.async_register_command(hass, ws_set)
     return True
+
+
+async def _async_register_resource(hass: HomeAssistant, url: str) -> None:
+    """Add or update the card in the dashboard resources (storage mode only)."""
+    data = hass.data.get("lovelace")
+    resources = (
+        data.get("resources") if isinstance(data, dict) else getattr(data, "resources", None)
+    )
+    if resources is None or not hasattr(resources, "async_create_item"):
+        return  # YAML resources: the extra JS URL has to do.
+    try:
+        if not resources.loaded:
+            await resources.async_load()
+            resources.loaded = True
+        for item in resources.async_items():
+            if item.get("url", "").split("?")[0] == CARD_URL:
+                if item["url"] != url:
+                    await resources.async_update_item(
+                        item["id"], {"res_type": "module", "url": url}
+                    )
+                return
+        await resources.async_create_item({"res_type": "module", "url": url})
+    except Exception:  # noqa: BLE001 - never block setup on the dashboard resource
+        _LOGGER.exception("Could not register the Habit Tracker card resource")
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

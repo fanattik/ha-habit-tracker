@@ -111,3 +111,18 @@ async def test_empty_name(hass: HomeAssistant) -> None:
         result["flow_id"], {"name": "  ", "habit_type": "boolean"})
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"name": "empty_name"}
+
+
+async def test_card_resource_registered(hass: HomeAssistant) -> None:
+    assert await async_setup_component(hass, "http", {})
+    assert await async_setup_component(hass, DOMAIN, {})
+    await hass.async_block_till_done()
+    resources = hass.data["lovelace"].resources
+    urls = [r["url"] for r in resources.async_items()]
+    assert len([u for u in urls if u.startswith("/habit_tracker/habit-tracker-card.js?v=")]) == 1
+    # Setting up again does not duplicate it.
+    from custom_components.habit_tracker import _async_register_resource
+    await _async_register_resource(hass, "/habit_tracker/habit-tracker-card.js?v=9.9.9")
+    urls = [r["url"] for r in resources.async_items()]
+    assert urls.count("/habit_tracker/habit-tracker-card.js?v=9.9.9") == 1
+    assert len([u for u in urls if u.startswith("/habit_tracker/")]) == 1

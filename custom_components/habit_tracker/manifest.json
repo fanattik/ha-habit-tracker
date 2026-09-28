@@ -1,13 +1,20 @@
 {
   "domain": "habit_tracker",
   "name": "Habit Tracker",
-  "codeowners": ["@fanattik"],
+  "codeowners": [
+    "@fanattik"
+  ],
   "config_flow": true,
-  "dependencies": ["frontend", "http", "websocket_api"],
+  "dependencies": [
+    "frontend",
+    "http",
+    "lovelace",
+    "websocket_api"
+  ],
   "documentation": "https://github.com/fanattik/ha-habit-tracker",
   "integration_type": "service",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/fanattik/ha-habit-tracker/issues",
   "requirements": [],
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
