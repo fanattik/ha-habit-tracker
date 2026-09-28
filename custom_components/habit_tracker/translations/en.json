@@ -1,0 +1,83 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add habit",
+        "description": "Each habit is tracked per day and shown in the weekly Habit Tracker card.",
+        "data": {
+          "name": "Name",
+          "habit_type": "Type",
+          "target": "Daily target",
+          "icon": "Icon"
+        },
+        "data_description": {
+          "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done."
+        }
+      }
+    },
+    "error": {
+      "empty_name": "Name cannot be empty."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit habit",
+        "data": {
+          "name": "Name",
+          "habit_type": "Type",
+          "target": "Daily target",
+          "icon": "Icon"
+        },
+        "data_description": {
+          "target": "For count habits: the number that counts as done for the day (e.g. 20 pushups). Ignored for done / not done."
+        }
+      }
+    },
+    "error": {
+      "empty_name": "Name cannot be empty."
+    }
+  },
+  "selector": {
+    "habit_type": {
+      "options": {
+        "boolean": "Done / not done",
+        "count": "Count"
+      }
+    }
+  },
+  "services": {
+    "toggle": {
+      "name": "Toggle habit",
+      "description": "Mark a day done, or clear it. Count habits jump to their target.",
+      "fields": {
+        "entity_id": {
+          "name": "Habit",
+          "description": "Habit sensor(s)."
+        },
+        "date": {
+          "name": "Date",
+          "description": "Day to change; today if empty."
+        }
+      }
+    },
+    "set_value": {
+      "name": "Set habit value",
+      "description": "Set the value logged for a day (0 clears it).",
+      "fields": {
+        "entity_id": {
+          "name": "Habit",
+          "description": "Habit sensor(s)."
+        },
+        "date": {
+          "name": "Date",
+          "description": "Day to change; today if empty."
+        },
+        "value": {
+          "name": "Value",
+          "description": "1 = done for done / not done habits, or the count."
+        }
+      }
+    }
+  }
+}

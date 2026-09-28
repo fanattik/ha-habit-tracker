@@ -1,0 +1,29 @@
+toggle:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          integration: habit_tracker
+          multiple: true
+    date:
+      selector:
+        date:
+set_value:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          integration: habit_tracker
+          multiple: true
+    date:
+      selector:
+        date:
+    value:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100000
+          mode: box
