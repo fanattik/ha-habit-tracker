@@ -1,0 +1,83 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Přidat návyk",
+        "description": "Každý návyk se sleduje po dnech a zobrazí se v týdenní kartě Habit Tracker.",
+        "data": {
+          "name": "Název",
+          "habit_type": "Typ",
+          "target": "Denní cíl",
+          "icon": "Ikona"
+        },
+        "data_description": {
+          "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje."
+        }
+      }
+    },
+    "error": {
+      "empty_name": "Název nesmí být prázdný."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Upravit návyk",
+        "data": {
+          "name": "Název",
+          "habit_type": "Typ",
+          "target": "Denní cíl",
+          "icon": "Ikona"
+        },
+        "data_description": {
+          "target": "U počtu: kolik se počítá jako splněný den (např. 20 kliků). U splněno / nesplněno se ignoruje."
+        }
+      }
+    },
+    "error": {
+      "empty_name": "Název nesmí být prázdný."
+    }
+  },
+  "selector": {
+    "habit_type": {
+      "options": {
+        "boolean": "Splněno / nesplněno",
+        "count": "Počet"
+      }
+    }
+  },
+  "services": {
+    "toggle": {
+      "name": "Přepnout návyk",
+      "description": "Označí den jako splněný, nebo ho vymaže. U počtu nastaví cíl.",
+      "fields": {
+        "entity_id": {
+          "name": "Návyk",
+          "description": "Senzor(y) návyku."
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Den ke změně; prázdné = dnes."
+        }
+      }
+    },
+    "set_value": {
+      "name": "Nastavit hodnotu návyku",
+      "description": "Nastaví hodnotu pro daný den (0 ji vymaže).",
+      "fields": {
+        "entity_id": {
+          "name": "Návyk",
+          "description": "Senzor(y) návyku."
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Den ke změně; prázdné = dnes."
+        },
+        "value": {
+          "name": "Hodnota",
+          "description": "1 = splněno u splněno / nesplněno, jinak počet."
+        }
+      }
+    }
+  }
+}
