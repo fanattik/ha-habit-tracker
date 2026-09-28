@@ -15,6 +15,9 @@ const STRINGS = {
     error: "Could not load habits",
     calendarTitle: "Habit calendar",
     future: "This day has not come yet.",
+    overviewTitle: "Week overview",
+    doneGoal: "Done",
+    notDone: (n) => `${n} to go`,
   },
   cs: {
     title: "Návyky",
@@ -30,6 +33,9 @@ const STRINGS = {
     error: "Návyky se nepodařilo načíst",
     calendarTitle: "Kalendář návyků",
     future: "Tento den ještě nenastal.",
+    overviewTitle: "Přehled týdne",
+    doneGoal: "Splněno",
+    notDone: (n) => `Zbývá ${n}×`,
   },
 };
 
@@ -600,6 +606,114 @@ const CAL_STYLE = `
   .count small { font-weight: 400; color: var(--secondary-text-color); }
 `;
 
+/* Week overview card: one box per habit, side by side, showing whether this week's goal is met. */
+class HabitOverviewCard extends HabitTrackerCard {
+  getCardSize() {
+    return 2 + Math.ceil((this._data?.habits.length || 2) / 3) * 2;
+  }
+
+  getGridOptions() {
+    return { columns: 12, min_columns: 3 };
+  }
+
+  _tile(habit, days, today) {
+    const t = this._t;
+    const color = esc(habit.display_color);
+    const goal = habit.weekly_goal || 7;
+    const met = habit.week_done >= goal;
+    const icon = habit.icon ? `<ha-icon icon="${esc(habit.icon)}"></ha-icon>` : "";
+    const strip = days
+      .map((d, i) => {
+        const value = habit.values[d] || 0;
+        const weekday = i; // days start on Monday
+        let cls = "sq";
+        let style = "";
+        if (value >= habit.target) {
+          cls += " done";
+          style = met ? "" : ` style="background:${color}"`;
+        } else if (value > 0) {
+          cls += " part";
+        } else if (d > today) {
+          cls += " future";
+        }
+        if (habit.days && habit.days.indexOf(weekday) === -1 && value < habit.target) cls += " off";
+        return `<i class="${cls}"${style} title="${t.days[i]}"></i>`;
+      })
+      .join("");
+    return `
+      <div class="tile${met ? " met" : ""}" style="${met ? `background:${color};border-color:${color}` : `border-color:${color}`}">
+        <div class="thead">${icon}<span class="tname">${esc(habit.name)}</span></div>
+        <div class="tstate">
+          <span class="badge">${met ? "✓" : `${habit.week_done}/${goal}`}</span>
+          <span class="tlabel">${met ? t.doneGoal : esc(t.notDone(goal - habit.week_done))}</span>
+        </div>
+        <div class="strip">${strip}</div>
+      </div>`;
+  }
+
+  _render() {
+    if (!this._config) return;
+    const t = this._t;
+    const data = this._data;
+    const title = this._config.title ?? t.overviewTitle;
+    let body = "";
+
+    if (this._error && !data) {
+      body = `<div class="msg">${t.error}: ${esc(this._error)}</div>`;
+    } else if (!data) {
+      body = `<div class="msg">…</div>`;
+    } else {
+      const start = data.week_start;
+      const today = data.today;
+      const days = [...Array(7).keys()].map((i) => addDays(start, i));
+      const habits = this._habits();
+      const isCurrent = today >= start && today <= addDays(start, 6);
+      const met = habits.filter((h) => h.week_done >= (h.weekly_goal || 7)).length;
+      body = `
+        <div class="nav">
+          <button class="navbtn" data-nav="-7" aria-label="previous week">‹</button>
+          <span class="week">${isCurrent ? t.thisWeek : `${shortDate(start)} – ${shortDate(addDays(start, 6))}`}${habits.length ? ` · ${met}/${habits.length}` : ""}</span>
+          <button class="navbtn" data-nav="7" aria-label="next week" ${isCurrent ? "disabled" : ""}>›</button>
+        </div>
+        ${habits.length
+          ? `<div class="tiles">${habits.map((h) => this._tile(h, days, today)).join("")}</div>`
+          : `<div class="msg">${t.empty}</div>`}
+        ${this._error ? `<div class="msg err">${esc(this._error)}</div>` : ""}`;
+    }
+
+    this.shadowRoot.innerHTML = `
+      <style>${STYLE}${OVERVIEW_STYLE}</style>
+      <ha-card>
+        ${title ? `<div class="title">${esc(title)}</div>` : ""}
+        <div class="content">${body}</div>
+      </ha-card>`;
+    this._bind();
+  }
+}
+
+const OVERVIEW_STYLE = `
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .tile { border: 2px solid; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+    min-width: 0; color: var(--primary-text-color); background: var(--card-background-color); }
+  .tile.met { color: #fff; }
+  .thead { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 600; }
+  .thead ha-icon { --mdc-icon-size: 20px; flex: none; }
+  .tname { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; line-height: 1.25; }
+  .tstate { display: flex; align-items: center; gap: 8px; }
+  .badge { min-width: 34px; height: 34px; padding: 0 6px; box-sizing: border-box; border-radius: 17px; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; background: var(--ht-empty); color: var(--primary-text-color); }
+  .met .badge { background: rgba(255,255,255,.25); color: #fff; font-size: 1.1rem; }
+  .tlabel { font-size: .85rem; color: var(--secondary-text-color); }
+  .met .tlabel { color: rgba(255,255,255,.9); }
+  .strip { display: flex; gap: 3px; }
+  .sq { flex: 1; height: 6px; border-radius: 3px; background: var(--ht-empty); }
+  .sq.future { background: none; box-shadow: inset 0 0 0 1px var(--ht-empty); }
+  .sq.part { background: var(--ht-partial); }
+  .sq.off { opacity: .4; }
+  .met .sq { background: rgba(255,255,255,.3); box-shadow: none; }
+  .met .sq.done { background: #fff; }
+`;
+
 if (!customElements.get("habit-tracker-card")) {
   customElements.define("habit-tracker-card", HabitTrackerCard);
   window.customCards = window.customCards || [];
@@ -618,6 +732,17 @@ if (!customElements.get("habit-tracker-calendar-card")) {
     type: "habit-tracker-calendar-card",
     name: "Habit Tracker: calendar",
     description: "Month calendar with a colored dot per done habit.",
+    preview: true,
+  });
+}
+
+if (!customElements.get("habit-tracker-overview-card")) {
+  customElements.define("habit-tracker-overview-card", HabitOverviewCard);
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "habit-tracker-overview-card",
+    name: "Habit Tracker: week overview",
+    description: "One box per habit showing whether this week's goal is met.",
     preview: true,
   });
 }

@@ -11,7 +11,7 @@ A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day
 - **Two habit types:** *done / not done*, or *count* with a daily target (e.g. 20 pushups). A count below the target shows orange, at or above the target green.
 - **Weekly goals.** Pick the planned days (e.g. Mon, Wed, Fri) and/or how many times a week counts as success (e.g. 3×). Days outside the plan are dimmed but can still be ticked.
 - **Colors.** Each habit can have its own color (otherwise one is assigned automatically).
-- **Two cards included**, registered automatically: the weekly grid `habit-tracker-card` and the month calendar `habit-tracker-calendar-card`, where each done habit shows as a colored dot under the day and clicking a day lists all habits to tick off.
+- **Three cards included**, registered automatically: the weekly grid `habit-tracker-card`, the month calendar `habit-tracker-calendar-card`, where each done habit shows as a colored dot under the day and clicking a day lists all habits to tick off, and the week overview `habit-tracker-overview-card` with one box per habit, filled with its color once the week's goal is met.
 - **Sensors for automations.** Each habit gets a sensor whose state is this week's completion in %, with attributes `today`, `done_today`, `streak`, `weekly_goal`, `done_this_week`, `days`, `habit_type` and `target`.
 - **Services:** `habit_tracker.toggle` and `habit_tracker.set_value` (optional `date`, defaults to today), usable from automations, scripts or voice.
 
@@ -38,6 +38,15 @@ Month calendar:
 ```yaml
 type: custom:habit-tracker-calendar-card
 title: Kalendář návyků # optional
+entities:              # optional, same as above
+  - sensor.cviceni
+```
+
+Week overview, one box per habit showing whether this week's goal is met:
+
+```yaml
+type: custom:habit-tracker-overview-card
+title: Přehled týdne   # optional
 entities:              # optional, same as above
   - sensor.cviceni
 ```

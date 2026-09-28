@@ -13,7 +13,10 @@ const STRINGS = {
     cancel: "Cancel",
     error: "Could not load habits",
     calendarTitle: "Habit calendar",
-    future: "This day has not come yet."
+    future: "This day has not come yet.",
+    overviewTitle: "Week overview",
+    doneGoal: "Done",
+    notDone: (n) => "".concat(n, " to go")
   },
   cs: {
     title: "N\xE1vyky",
@@ -28,7 +31,10 @@ const STRINGS = {
     cancel: "Zru\u0161it",
     error: "N\xE1vyky se nepoda\u0159ilo na\u010D\xEDst",
     calendarTitle: "Kalend\xE1\u0159 n\xE1vyk\u016F",
-    future: "Tento den je\u0161t\u011B nenastal."
+    future: "Tento den je\u0161t\u011B nenastal.",
+    overviewTitle: "P\u0159ehled t\xFDdne",
+    doneGoal: "Spln\u011Bno",
+    notDone: (n) => "Zb\xFDv\xE1 ".concat(n, "\xD7")
   }
 };
 const NARROW_WIDTH = 560;
@@ -395,6 +401,63 @@ class HabitCalendarCard extends HabitTrackerCard {
   }
 }
 const CAL_STYLE = "\n  .month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }\n  .wd { text-align: center; font-size: .8rem; font-weight: 600; color: var(--secondary-text-color); padding-bottom: 4px; }\n  .mday { border: none; background: none; border-radius: 10px; padding: 6px 2px 4px; min-height: 52px; cursor: pointer;\n    display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--primary-text-color);\n    font: inherit; }\n  .mday:hover { background: var(--ht-empty); }\n  .mday .num { font-size: .95rem; line-height: 1; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }\n  .mday.today .num { background: var(--primary-color); color: var(--text-primary-color, #fff); font-weight: 600; }\n  .mday.selected { background: var(--ht-empty); box-shadow: inset 0 0 0 2px var(--primary-color); }\n  .mday.future { opacity: .4; }\n  .dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 100%; min-height: 7px; }\n  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: none; }\n  .dot.part { background: none; border: 1.5px solid; width: 4px; height: 4px; }\n  .dot.big { width: 12px; height: 12px; }\n  .panel { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--divider-color); }\n  .panel-title { font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color); }\n  .habit { display: flex; align-items: center; gap: 10px; padding: 6px 0; }\n  .hname { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--primary-text-color); }\n  .hname span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n  .hname ha-icon { --mdc-icon-size: 20px; color: var(--secondary-text-color); flex: none; }\n  .toggle { width: 34px; height: 34px; border-radius: 50%; border: 2px solid; background: none; cursor: pointer;\n    color: #fff; font-size: 1rem; font-weight: 700; flex: none; }\n  .counter { display: flex; align-items: center; gap: 6px; flex: none; }\n  .counter .step { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--ht-empty);\n    color: var(--primary-text-color); font-size: 1.1rem; cursor: pointer; }\n  .count { min-width: 48px; text-align: center; font-weight: 600; color: var(--primary-text-color); }\n  .count small { font-weight: 400; color: var(--secondary-text-color); }\n";
+class HabitOverviewCard extends HabitTrackerCard {
+  getCardSize() {
+    var _a;
+    return 2 + Math.ceil((((_a = this._data) == null ? void 0 : _a.habits.length) || 2) / 3) * 2;
+  }
+  getGridOptions() {
+    return { columns: 12, min_columns: 3 };
+  }
+  _tile(habit, days, today) {
+    const t = this._t;
+    const color = esc(habit.display_color);
+    const goal = habit.weekly_goal || 7;
+    const met = habit.week_done >= goal;
+    const icon = habit.icon ? '<ha-icon icon="'.concat(esc(habit.icon), '"></ha-icon>') : "";
+    const strip = days.map((d, i) => {
+      const value = habit.values[d] || 0;
+      const weekday = i;
+      let cls = "sq";
+      let style = "";
+      if (value >= habit.target) {
+        cls += " done";
+        style = met ? "" : ' style="background:'.concat(color, '"');
+      } else if (value > 0) {
+        cls += " part";
+      } else if (d > today) {
+        cls += " future";
+      }
+      if (habit.days && habit.days.indexOf(weekday) === -1 && value < habit.target) cls += " off";
+      return '<i class="'.concat(cls, '"').concat(style, ' title="').concat(t.days[i], '"></i>');
+    }).join("");
+    return '\n      <div class="tile'.concat(met ? " met" : "", '" style="').concat(met ? "background:".concat(color, ";border-color:").concat(color) : "border-color:".concat(color), '">\n        <div class="thead">').concat(icon, '<span class="tname">').concat(esc(habit.name), '</span></div>\n        <div class="tstate">\n          <span class="badge">').concat(met ? "\u2713" : "".concat(habit.week_done, "/").concat(goal), '</span>\n          <span class="tlabel">').concat(met ? t.doneGoal : esc(t.notDone(goal - habit.week_done)), '</span>\n        </div>\n        <div class="strip">').concat(strip, "</div>\n      </div>");
+  }
+  _render() {
+    var _a;
+    if (!this._config) return;
+    const t = this._t;
+    const data = this._data;
+    const title = (_a = this._config.title) != null ? _a : t.overviewTitle;
+    let body = "";
+    if (this._error && !data) {
+      body = '<div class="msg">'.concat(t.error, ": ").concat(esc(this._error), "</div>");
+    } else if (!data) {
+      body = '<div class="msg">\u2026</div>';
+    } else {
+      const start = data.week_start;
+      const today = data.today;
+      const days = [...Array(7).keys()].map((i) => addDays(start, i));
+      const habits = this._habits();
+      const isCurrent = today >= start && today <= addDays(start, 6);
+      const met = habits.filter((h) => h.week_done >= (h.weekly_goal || 7)).length;
+      body = '\n        <div class="nav">\n          <button class="navbtn" data-nav="-7" aria-label="previous week">\u2039</button>\n          <span class="week">'.concat(isCurrent ? t.thisWeek : "".concat(shortDate(start), " \u2013 ").concat(shortDate(addDays(start, 6)))).concat(habits.length ? " \xB7 ".concat(met, "/").concat(habits.length) : "", '</span>\n          <button class="navbtn" data-nav="7" aria-label="next week" ').concat(isCurrent ? "disabled" : "", ">\u203A</button>\n        </div>\n        ").concat(habits.length ? '<div class="tiles">'.concat(habits.map((h) => this._tile(h, days, today)).join(""), "</div>") : '<div class="msg">'.concat(t.empty, "</div>"), "\n        ").concat(this._error ? '<div class="msg err">'.concat(esc(this._error), "</div>") : "");
+    }
+    this.shadowRoot.innerHTML = "\n      <style>".concat(STYLE).concat(OVERVIEW_STYLE, "</style>\n      <ha-card>\n        ").concat(title ? '<div class="title">'.concat(esc(title), "</div>") : "", '\n        <div class="content">').concat(body, "</div>\n      </ha-card>");
+    this._bind();
+  }
+}
+const OVERVIEW_STYLE = "\n  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }\n  .tile { border: 2px solid; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;\n    min-width: 0; color: var(--primary-text-color); background: var(--card-background-color); }\n  .tile.met { color: #fff; }\n  .thead { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 600; }\n  .thead ha-icon { --mdc-icon-size: 20px; flex: none; }\n  .tname { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; line-height: 1.25; }\n  .tstate { display: flex; align-items: center; gap: 8px; }\n  .badge { min-width: 34px; height: 34px; padding: 0 6px; box-sizing: border-box; border-radius: 17px; display: flex; align-items: center;\n    justify-content: center; font-weight: 700; background: var(--ht-empty); color: var(--primary-text-color); }\n  .met .badge { background: rgba(255,255,255,.25); color: #fff; font-size: 1.1rem; }\n  .tlabel { font-size: .85rem; color: var(--secondary-text-color); }\n  .met .tlabel { color: rgba(255,255,255,.9); }\n  .strip { display: flex; gap: 3px; }\n  .sq { flex: 1; height: 6px; border-radius: 3px; background: var(--ht-empty); }\n  .sq.future { background: none; box-shadow: inset 0 0 0 1px var(--ht-empty); }\n  .sq.part { background: var(--ht-partial); }\n  .sq.off { opacity: .4; }\n  .met .sq { background: rgba(255,255,255,.3); box-shadow: none; }\n  .met .sq.done { background: #fff; }\n";
 if (!customElements.get("habit-tracker-card")) {
   customElements.define("habit-tracker-card", HabitTrackerCard);
   window.customCards = window.customCards || [];
@@ -412,6 +475,16 @@ if (!customElements.get("habit-tracker-calendar-card")) {
     type: "habit-tracker-calendar-card",
     name: "Habit Tracker: calendar",
     description: "Month calendar with a colored dot per done habit.",
+    preview: true
+  });
+}
+if (!customElements.get("habit-tracker-overview-card")) {
+  customElements.define("habit-tracker-overview-card", HabitOverviewCard);
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "habit-tracker-overview-card",
+    name: "Habit Tracker: week overview",
+    description: "One box per habit showing whether this week's goal is met.",
     preview: true
   });
 }
