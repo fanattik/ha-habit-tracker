@@ -5,6 +5,8 @@
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=fanattik&repository=ha-habit-tracker&category=integration)
 [![Add a habit](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=habit_tracker)
 
+<a href="https://www.buymeacoffee.com/fanattik"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=fanattik&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="40"></a>
+
 A weekly habit tracker: habits in rows, Monday to Sunday in columns, click a day to mark it done.
 
 - **Habits are managed in the UI.** Each habit is added in *Settings → Devices & services → Add integration → Habit Tracker* and can be edited (name, type, daily target, icon) or deleted like any other integration.
@@ -105,3 +107,9 @@ Data is stored in `.storage/habit_tracker.<entry_id>` and is removed when the ha
 ## Development
 
 The card source is `src/habit-tracker-card.js`. Run `./build.sh` after changing it: it writes the served file, compiled so it also runs on older iPads and phones (Safari 12+).
+
+## Support
+
+If Habit Tracker helps you keep your habits, you can buy me a coffee:
+
+<a href="https://www.buymeacoffee.com/fanattik"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=fanattik&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="40"></a>
